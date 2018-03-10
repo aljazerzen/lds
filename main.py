@@ -5,9 +5,10 @@ import yaml
 
 from steem import Steem
 
-from btcPrice import getPrice
-
 # Load config
+import post_storage
+import btc_price
+
 with open("config.yml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
@@ -26,39 +27,35 @@ nodes = [
 ]
 s = Steem(nodes, False, )
 
-def commentBatch():
-    f = open('lastPost.txt', 'r')
-    lastPost = f.read()
-    f.close()
 
+def comment_batch(category, textTemplate):
     global s
-    posts = s.get_posts(limit=10, sort="created", category=cfg['app']['category'])
+    posts = s.get_posts(limit=10, sort="created", category=category)
+    lastPost = post_storage.get(category)
 
     for post in posts:
         if (lastPost is not None) and (lastPost == post.identifier):
             break
-        commentPost(post)
+        comment_post(post, textTemplate)
 
-    f = open('lastPost.txt', 'w')
-    f.write(posts[0].identifier)
-    f.close()
-    print('batch complete.')
+    post_storage.save(posts[0].identifier, category)
+    print(f'batch \'{category}\' complete.')
 
 
 lastCommented = None
 
 
-def commentPost(post):
+def comment_post(post, text):
     global lastCommented
 
     if lastCommented is not None:
-        toWait = 20 - (datetime.now() - lastCommented).seconds
+        toWait = 20.5 - (datetime.now() - lastCommented).seconds
         if toWait >= 0:
-            print(f'waiting for {toWait} seconds')
+            print(f'    waiting for {toWait} seconds')
             sleep(toWait)
 
-    print('commenting on a post: ' + post.identifier)
-    body = Template(cfg['app']['replyBody']).substitute(btcPrice=getPrice())
+    print('  commenting on a post: ' + post.identifier)
+    body = Template(text).substitute(btcPrice=btc_price.get())
     # print(body)
 
     post.reply(body, author=cfg['app']['account'])
@@ -66,5 +63,12 @@ def commentPost(post):
 
 
 while True:
-    commentBatch()
+    try:
+        for category in cfg['app']['categories']:
+            comment_batch(list(category.keys())[0], list(category.values())[0])
+    except Exception as e:
+        with open('error.log', 'a+') as f:
+            f.write(f'\n[{datetime.now()}]:\n' + str(e) + str(e.args) + '\n')
+            f.close()
+
     sleep(cfg['app']['sleepInterval'])

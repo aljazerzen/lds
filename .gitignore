@@ -1,6 +1,8 @@
 config.yml
-lastPost.txt
 .idea/
 __pycache__/
-
 venv/
+
+error.log
+post.storage.yml
+lastPost.txt
