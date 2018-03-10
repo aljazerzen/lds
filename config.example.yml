@@ -1,0 +1,5 @@
+app:
+  sleepInterval: 60
+  replyBody: 'For future viewers: price of bitcoin at the moment of posting was ${btcPrice}USD. Happy trading!'
+  category: 'bitcoin'
+  account: 'yourAccountName'

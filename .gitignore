@@ -1,0 +1,6 @@
+config.yml
+lastPost.txt
+.idea/
+__pycache__/
+
+venv/
